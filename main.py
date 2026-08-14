@@ -1,8 +1,10 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+from datetime import datetime
 
 app = FastAPI()
 
-
+# ---------- Dummy loan database ----------
 loans_db = {
     "LN00234": {
         "borrower_id": "LN00234",
@@ -22,9 +24,13 @@ loans_db = {
     }
 }
 
+escalations_log = []
+
+
 @app.get("/")
 def root():
     return {"status": "EMI Nudge API is live"}
+
 
 @app.get("/api/loans/{borrower_id}")
 def get_loan(borrower_id: str):
@@ -32,3 +38,23 @@ def get_loan(borrower_id: str):
     if not loan:
         return {"error": "Borrower not found"}
     return loan
+
+
+class EscalationPayload(BaseModel):
+    loan_id: str
+    borrower_name: str
+    days_past_due: str | None = None
+    reason_for_transfer: str
+    transcript: str | None = None
+
+@app.post("/api/collections/escalations")
+def log_escalation(payload: EscalationPayload):
+    record = payload.dict()
+    record["received_at"] = datetime.utcnow().isoformat()
+    escalations_log.append(record)
+    return {"status": "logged", "record": record}
+
+
+@app.get("/api/collections/escalations")
+def get_escalations():
+    return {"count": len(escalations_log), "escalations": escalations_log}
