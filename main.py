@@ -24,6 +24,7 @@ loans_db = {
 }
 
 escalations_log = []
+call_outcomes_log = []
 
 
 @app.get("/")
@@ -58,3 +59,26 @@ def log_escalation(payload: EscalationPayload):
 @app.get("/api/collections/escalations")
 def get_escalations():
     return {"count": len(escalations_log), "escalations": escalations_log}
+
+
+class CallOutcomePayload(BaseModel):
+    loan_id: str
+    borrower_name: str
+    disposition: str
+    ptp_date: str | None = None
+    ptp_amount: str | None = None
+    language_used: str | None = None
+    call_duration: str | None = None
+    notes: str | None = None
+
+@app.post("/api/collections/call-outcomes")
+def log_call_outcome(payload: CallOutcomePayload):
+    record = payload.dict()
+    record["received_at"] = datetime.utcnow().isoformat()
+    call_outcomes_log.append(record)
+    return {"status": "logged", "record": record}
+
+
+@app.get("/api/collections/call-outcomes")
+def get_call_outcomes():
+    return {"count": len(call_outcomes_log), "outcomes": call_outcomes_log}
