@@ -1,10 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from datetime import datetime
 
 app = FastAPI()
 
-# ---------- Dummy loan database ----------
 loans_db = {
     "LN00234": {
         "borrower_id": "LN00234",
@@ -32,11 +31,12 @@ def root():
     return {"status": "EMI Nudge API is live"}
 
 
-@app.get("/api/loans/{borrower_id}")
-def get_loan(borrower_id: str):
+@app.get("/api/loans")
+def get_loan(request: Request):
+    borrower_id = request.headers.get("borrower_id")
     loan = loans_db.get(borrower_id)
     if not loan:
-        return {"error": "Borrower not found"}
+        return {"error": "Borrower not found", "received_borrower_id": borrower_id}
     return loan
 
 
